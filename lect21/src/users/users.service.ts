@@ -19,8 +19,9 @@ export class UsersService {
       gender: 'male',
     },
   ];
-  getAllUSers() {
-    return this.users;
+  getAllUsers(page: number, take: number) {
+    const start = (page - 1) * take;
+    return this.users.slice(start, start + take);
   }
   getUserById(id: number) {
     const user = this.users.find((el) => el.id === id);
@@ -82,5 +83,18 @@ export class UsersService {
       ...updateReq,
     };
     return 'updated successfully';
+  }
+  getAllUsersFiltered({ page, take, gender, email }: any) {
+    let filtered = this.users;
+
+    if (gender) {
+      filtered = filtered.filter((u) => u.gender === gender);
+    }
+    if (email) {
+      filtered = filtered.filter((u) => u.email.startsWith(email));
+    }
+
+    const start = (page - 1) * take;
+    return filtered.slice(start, start + take);
   }
 }

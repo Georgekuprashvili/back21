@@ -15,8 +15,9 @@ export class ExpensesService {
     },
   ];
 
-  getAllExpenses() {
-    return this.expenses;
+  getAllExpenses(page: number, take: number) {
+    const start = (page - 1) * take;
+    return this.expenses.slice(start, start + take);
   }
 
   getExpenseById(id: number) {
@@ -65,5 +66,21 @@ export class ExpensesService {
 
     this.expenses.splice(index, 1);
     return 'deleteed successfully';
+  }
+  getFilteredExpenses({ page, take, category, priceFrom, priceTo }: any) {
+    let filtered = this.expenses;
+
+    if (category) {
+      filtered = filtered.filter((e) => e.category === category);
+    }
+    if (priceFrom) {
+      filtered = filtered.filter((e) => e.price >= priceFrom);
+    }
+    if (priceTo) {
+      filtered = filtered.filter((e) => e.price <= priceTo);
+    }
+
+    const start = (page - 1) * take;
+    return filtered.slice(start, start + take);
   }
 }

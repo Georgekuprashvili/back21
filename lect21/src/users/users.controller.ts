@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -15,8 +16,13 @@ import { updateUserDto } from './dto/update-user.dto';
 export class UsersController {
   constructor(private userService: UsersService) {}
   @Get()
-  getAllUsers() {
-    return this.userService.getAllUSers();
+  getAllUsers(
+    @Query('page') page = 1,
+    @Query('take') take = 30,
+    @Query('gender') gender?: string,
+    @Query('email') email?: string,
+  ) {
+    return this.userService.getAllUsersFiltered({ page, take, gender, email });
   }
   @Get(':id')
   getUserById(@Param('id') id) {

@@ -1,7 +1,32 @@
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsEnum,
+  IsString,
+  IsNumber,
+} from 'class-validator';
+
+export enum Gender {
+  MALE = 'm',
+  FEMALE = 'f',
+}
+
 export class CreateUserDto {
-  firstName: string;
-  lastName: string;
+  @IsEmail()
   email: string;
+
+  @IsNotEmpty()
+  @IsString()
+  firstName: string;
+
+  @IsNotEmpty()
+  @IsString()
+  lastName: string;
+
+  @IsNotEmpty()
+  @IsNumber()
   phoneNumber: number;
-  gender: string;
+
+  @IsEnum(Gender)
+  gender: Gender;
 }
