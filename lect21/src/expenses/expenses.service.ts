@@ -1,86 +1,79 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Expense } from './schema/expense.schema';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
 
 @Injectable()
 export class ExpensesService {
-  private expenses = [
-    {
-      id: 1,
-      category: 'technique',
-      productName: 'laptop',
-      quantity: 1,
-      price: 500,
-      totalPrice: 500,
-    },
-  ];
+  constructor(@InjectModel('Expense') private expenseModel: Model<Expense>) {}
 
-  getAllExpenses(page: number, take: number) {
+  async getAllExpenses(page: number, take: number) {
+    const all = await this.expenseModel.find();
     const start = (page - 1) * take;
-    return this.expenses.slice(start, start + take);
+    return all.slice(start, start + take);
   }
 
-  getExpenseById(id: number) {
-    const expense = this.expenses.find((i) => i.id === id);
-    if (!expense) throw new BadRequestException('expense not found');
+  async getExpenseById(id: number) {
+    const expense = await this.expenseModel.findOne({ id: id });
+    if (!expense) throw new BadRequestException('Expense not found');
     return expense;
   }
-  createExpense(createDto: CreateExpenseDto) {
+
+  async createExpense(createDto: CreateExpenseDto) {
     const { category, productName, quantity, price } = createDto;
 
     if (!category || !productName || !quantity || !price) {
-      throw new BadRequestException('all fields are requireed');
+      throw new BadRequestException('All fields are required');
     }
-    const lastId = this.expenses[this.expenses.length - 1]?.id || 0;
-    const newExpense = {
-      id: lastId + 1,
-      category,
-      productName,
-      quantity,
-      price,
-      totalPrice: quantity * price,
-    };
-    this.expenses.push(newExpense);
-    return 'create successfully';
-  }
-  updateExpense(id: number, updateDto: UpdateExpenseDto) {
-    const index = this.expenses.findIndex((e) => e.id === id);
-    if (index === -1) throw new BadRequestException('expense not found');
 
-    const current = this.expenses[index];
+    const totalPrice = quantity * price;
+
+    const expense = new this.expenseModel({
+      ...createDto,
+      totalPrice,
+    });
+
+    await expense.save();
+    return 'Created successfully';
+  }
+
+  async updateExpense(id: number, updateDto: UpdateExpenseDto) {
+    const current = await this.expenseModel.findOne({ id: id });
+    if (!current) throw new BadRequestException('Expense not found');
+
     const updated = {
-      ...current,
+      ...current.toObject(),
       ...updateDto,
     };
 
     updated.totalPrice = updated.quantity * updated.price;
 
-    this.expenses[index] = updated;
-
-    return 'updated successfully';
+    await this.expenseModel.updateOne({ id: id }, updated);
+    return 'Updated successfully';
   }
 
-  deleteExpense(id: number) {
-    const index = this.expenses.findIndex((i) => i.id === id);
-    if (index === -1) throw new BadRequestException('expense not found');
-
-    this.expenses.splice(index, 1);
-    return 'deleteed successfully';
+  async deleteExpense(id: number) {
+    const deleted = await this.expenseModel.findOneAndDelete({ id: id });
+    if (!deleted) throw new BadRequestException('Expense not found');
+    return 'Deleted successfully';
   }
-  getFilteredExpenses({ page, take, category, priceFrom, priceTo }: any) {
-    let filtered = this.expenses;
+
+  async getFilteredExpenses({ page, take, category, priceFrom, priceTo }: any) {
+    let expenses = await this.expenseModel.find();
 
     if (category) {
-      filtered = filtered.filter((e) => e.category === category);
+      expenses = expenses.filter((e) => e.category === category);
     }
     if (priceFrom) {
-      filtered = filtered.filter((e) => e.price >= priceFrom);
+      expenses = expenses.filter((e) => e.price >= priceFrom);
     }
     if (priceTo) {
-      filtered = filtered.filter((e) => e.price <= priceTo);
+      expenses = expenses.filter((e) => e.price <= priceTo);
     }
 
     const start = (page - 1) * take;
-    return filtered.slice(start, start + take);
+    return expenses.slice(start, start + take);
   }
 }
